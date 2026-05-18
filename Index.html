@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script></script>
+    <script src="../Babylon/babylon.3.1.js"></script>
+    <script src="../Babylon/babylon-navigation-mesh.js"></script>
+    <script src="../Babylon/jquery-1.11.3.min.js"></script>
+    <!-- <script src="../assets/Babylon.js-master/dist/Oimo.js"></script>  新的物理引擎 -->
+
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .view-star{
+            position: fixed;
+            top:0;
+            bottom:0;
+            right:0;
+            left:0;
+            margin:auto;
+            width: 30px;
+            height: 30px;
+            background-image: url("../images/ico_star.png");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+        }
+        .game-overbg{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(246, 8, 0, 0.6);
+            display: none;
+        }
+        .game-text{
+            position: fixed;
+            top:0;
+            bottom:0;
+            right:0;
+            left:0;
+            margin:auto;
+            width: 600px;
+            height: 60px;
+            line-height: 60px;
+            font-size: 60px;
+            text-align: center;
+        }
+        .loading{
+            position:fixed;
+            width: 100%;
+            height: 100%;
+            top:0;
+            left: 0;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .loading-over{
+            background-color: rgba(255,255,255,0) !important;
+            pointer-events: none !important;
+        }
+        .loading-text{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            margin: auto;
+            color: #00e900;
+            text-shadow: 0px 0px 5px #fff;
+            padding: 10px;
+            pointer-events: none !important;
+          /*  width: 600px;
+            height: 400px;*/
+        }
+        .show-hp{
+            position: fixed;
+            height: 30px;
+            bottom: 0;
+            left: 0;
+            color: #00e900;
+            text-shadow: 0px 0px 5px #fff;
+            font-size: 30px;
+            padding: 10px;
+            pointer-events: none;
+        }
+
+        .begin-game{
+            position:fixed;
+            top:0;
+            left:0;
+            right:0;
+            bottom:0;
+            margin: auto;
+            width: 200px;
+            height: 60px;
+            font-size: 30px;
+            line-height: 60px;
+            text-align: center;
+            background-color: rgba(0,0,0,0.6);
+            color: #fff;
+            cursor: pointer;
+            display: none;
+            z-index: 6;
+        }
+        .begin-game:hover{
+            background-color: rgba(0,0,0,0.4);
+        }
+
+    </style>
+    <div class="view-star"></div>
+    <div class="game-overbg" id="game_over">
+        <div class="game-text">GAME OVER！！</div>
+    </div>
+
+
+    <div class="begin-game">Play</div>
+
+    <div class="loading">
+        <div class="loading-text">
+            <div class="laoding-tips"></div>
+            <div class="laoding-count"></div>
+            <div class="laoding-fps"></div>
+        </div>
+    </div>
+    <div class="show-hp"></div>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<script type="text/javascript" src="./main.js"></script>
+<script type="text/javascript">
+    // 从下面的HTML里获取画布元素
+    var canvas = document.querySelector("#renderCanvas");
+
+    // 加载BABYLON 3D引擎
+    var engine = new BABYLON.Engine(canvas, true);
+    // -------------------------------------------------------------
+    // 此处开始定义函数，它在构建完后就被调用
+    var createScene = function () {
+        // 现在创建一个Babylon场景对象
+
+        delete engine;
+        engine = new BABYLON.Engine(canvas, true, {
+            deterministicLockstep: true,
+            lockstepMaxSteps: 4
+        });
+
+        scene = new BABYLON.Scene(engine);
+
+
+
+        var loadState=0;
+        var loadState2=0;
+        var _length=scene.getWaitingItemsCount();
+        scene.onAfterStepObservable.add(function () {
+
+
+            //document.querySelectorAll(".laoding-fps")[0].innerHTML=engine.getFps().toFixed() + " fps";
+
+            $(".laoding-fps").html(engine.getFps().toFixed() + " fps")
+
+            if(loadState==0){
+               // console.log(parseInt((_length-scene.getWaitingItemsCount())/_length*100)+"%")
+               // document.querySelectorAll(".laoding-tips")[0].innerHTML="载入中:"+countLoad+"/5"
+                $(".laoding-tips").html("载入中:"+countLoad+"/5")
+                $(".laoding-count").html("当前加载剩余："+scene.getWaitingItemsCount()+"MB")
+            }
+            if(scene.getWaitingItemsCount()==0){
+                loadState=1
+                if(loadState2==0){
+                   // $(".loading").addClass("loading-over");
+                    $(".begin-game").show()
+                  //  document.querySelectorAll(".laoding")[0].style.backgroundColor="rgba(255,255,255,0)"
+                    console.log("加载成功!")
+                    loadState2=1;
+                }
+            }
+        })
+
+
+        // 改变场景的背景色为绿色.
+        scene.clearColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+
+        mp5 = new BABYLON.Sound("Gunshot", "music/m4a12.wav", scene, null, { playbackRate: 1, volume: 2,loop: false });
+        hq = new BABYLON.Sound("Gunshot", "music/hq.wav", scene, null, { playbackRate: 1, volume: 2,loop: false });
+        sq = new BABYLON.Sound("Gunshot", "music/sq.ogg", scene, null, { playbackRate: 1, volume: 2,loop: false });
+        feng = new BABYLON.Sound("Gunshot", "music/bgmkb.mp3", scene, null, { playbackRate: 1, volume: 2,loop: true,autoplay:true });
+        gameoverM = new BABYLON.Sound("Gunshot", "music/gameover.wav", scene, null, { playbackRate: 1, volume: 4 });
+
+        camera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(   -64.39097497983782, 45.35666716071116, 26.245192841103382), scene);
+        camera.attachControl(canvas, true);
+        camera.keysUp.push(87);
+        camera.keysDown.push(83);
+        camera.keysLeft.push(65);
+        camera.keysRight.push(68);
+        camera.inertia=0.2;
+        camera.speed=1.6;
+        camera.angularSensibility=500;
+        scene.gravity = new BABYLON.Vector3(0, -0.2, 0);
+        camera.fov=1
+
+
+
+        // 开启碰撞
+        scene.collisionsEnabled = true;
+
+
+        camera.checkCollisions = true;
+
+        //重力相机。
+       camera.applyGravity = true;
+
+        //摄像机上的椭球属性
+        camera.ellipsoid = new BABYLON.Vector3(0.4, 1, 0.4);
+        camera.maxZ=1000
+        camera.minZ=0
+
+
+
+      /*  var defaultPipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
+        defaultPipeline.bloomEnabled = true;
+        defaultPipeline.fxaaEnabled = true;
+        defaultPipeline.bloomWeight = 0.1;
+        defaultPipeline.cameraFov = 0.1;*/
+
+        scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
+        scene.fogColor = new BABYLON.Color3(0, 0, 0);
+        scene.fogDensity = 0.005;
+
+
+        light = new BABYLON.DirectionalLight("Dir0", new BABYLON.Vector3(10, -10, -10), scene);
+        light.intensity = 2;
+        light.autoUpdateExtends=false;
+        light.shadowFrustumSize=400
+
+        light1 = new BABYLON.HemisphericLight("Omni", new BABYLON.Vector3(50, 100, 50), scene);
+        light1.intensity = 0.3;
+
+
+
+        light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, 0, 0), scene);
+        light0.diffuse = new BABYLON.Color3(1, 0.5, 0);
+        light0.specular = new BABYLON.Color3(1, 0.5, 0);
+        light0.intensity = 0;
+        light0.range=10
+        light0.angle = 0;
+        light0.exponent =0;
+        light0.parent=camera;
+        light0.position.z=1.5
+    //    console.log(light0)
+     /*   light0.position.y=0
+        light0.position.z=0*/
+
+
+        light2 = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(-0.1, 0, 1), Math.PI / 3, 2, scene);
+
+        light2.parent=camera;
+
+        light2.diffuse = new BABYLON.Color3(1, 1, 1);
+        light2.specular = new BABYLON.Color3(1, 1, 1);
+
+        light2.position.x=0.3
+        light2.position.y=0
+        light2.exponent=45
+        light2.intensity = 2;
+        light2.range=20
+
+
+
+        shadowGenerator3 = new BABYLON.ShadowGenerator(512, light2);
+        //  shadowGenerator.frustumEdgeFalloff = 10.0;
+        shadowGenerator3.bias = 0.00005;
+        //shadowGenerator3.blurScale=1
+
+
+
+        shadowGenerator2 = new BABYLON.ShadowGenerator(512, light0);
+        shadowGenerator2.bias = 0.005;
+        //shadowGenerator2.blurScale=1
+
+        shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+        shadowGenerator.bias = 0.0000001;
+
+        shadowGenerator.useBlurCloseExponentialShadowMap = true;
+        // shadowGenerator.forceBackFacesOnly= true;
+        shadowGenerator.depthScale=208
+        shadowGenerator.blurScale=0.6
+        //  shadowGenerator.frustumEdgeFalloff = 10.0;
+        light.shadowMinZ=-200
+        light.shadowMaxZ=200
+
+
+        //m4a1
+        box2 = BABYLON.Mesh.CreateBox("crate", 2, scene);
+        box2.material = new BABYLON.StandardMaterial("Mat", scene);
+        box2.material.alpha=1;
+        box2.position = new BABYLON.Vector3(0, 0, 10);
+        box2.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+        box2.parent=camera;
+        box2.checkCollisions = false;
+        box2.isPickable=false
+
+        //手枪
+        box3 = BABYLON.Mesh.CreateBox("crate", 2, scene);
+        box3.material = new BABYLON.StandardMaterial("Mat", scene);
+        box3.material.alpha=0;
+        box3.position = new BABYLON.Vector3(5, -61, 4);
+        box3.parent=camera;
+        box3.checkCollisions = false;
+        box3.isPickable=false
+
+
+
+
+
+
+
+
+
+        //火焰
+        box5 = BABYLON.Mesh.CreateBox("crate", 2, scene);
+        box5.material = new BABYLON.StandardMaterial("Mat", scene);
+        box5.material.alpha=0;
+        box5.position = new BABYLON.Vector3(0.3, -0.2, 3);
+        box5.parent=camera;
+        box5.checkCollisions = false;
+        box5.isPickable=false
+
+
+        box6 = BABYLON.Mesh.CreateBox("crate", 2, scene);
+        box6.material = new BABYLON.StandardMaterial("Mat", scene);
+        box6.material.alpha=0;
+        box6.position = new BABYLON.Vector3(0, 80, 0);
+        box6.scaling= new BABYLON.Vector3(3, 3, 3);
+        box6.checkCollisions = false;
+        box6.isPickable=false
+
+        scene.removeMesh(box3)
+        scene.removeMesh(box2)
+        scene.removeMesh(box5)
+        scene.removeMesh(box6)
+
+
+        /*NPC list*/
+        box7=[]
+        box7_npc=[]
+        box7_npc_ani=[]
+
+        npc_zou=[]
+        npc_pao=[]
+        gameover=[]
+        npcdie=[]
+
+        playHp=100;
+
+        npcHomePosition= new BABYLON.Vector3(  -28.808569599585276,  41.7037449309924,  -49.02241789703331);
+
+        for(var i=0;i<10;i++){
+            box7[i] = BABYLON.Mesh.CreateBox("meinv", 2, scene);
+            box7[i].material = new BABYLON.StandardMaterial("Mat", scene);
+            //  box7[i].material.alpha=0;
+            box7[i].position =npcHomePosition
+            box7[i].scaling= new BABYLON.Vector3(0.3, 0.3,0.3);
+            box7[i].checkCollisions = false;
+            box7[i].isPickable=true;
+            box7[i].hp=100;
+            box7[i].npcdieState=false;
+        }
+
+
+
+
+
+        //首先要做的是定义我们的重力矢量，定义G力。在一个经典的世界，如地球，重力的方向沿Y轴向下（负），但随时改变它！
+
+
+
+        //并声明哪些网格可能与我们的相机碰撞：
+       // ground.checkCollisions = true;
+       // box.checkCollisions = true;
+
+       /* // 创建一个光源，在0,1,0点朝向天空.
+        var light = new BABYLON.PointLight("light1", new BABYLON.Vector3(115, 110, 10), scene);
+
+        // 将光源光线置为昏暗
+        light.intensity = 1;*/
+
+
+
+
+
+        qiangState=1;
+
+
+
+
+        var freeHuo=new freeHuoConstructor(box5)
+
+
+        moveSpeed=1;
+        freeState=false
+        dd=[]
+
+        var decalMaterial = new BABYLON.StandardMaterial("decalMat", scene);
+        decalMaterial.diffuseTexture = new BABYLON.Texture("../images/impact.png", scene);
+        decalMaterial.diffuseTexture.hasAlpha = true;
+        decalMaterial.zOffset = -2;
+        decalMaterial.disableLighting=true;
+
+
+
+
+
+
+
+
+        scene.onAfterStepObservable.add(function () {
+
+         /*   light.position.z=camera.position.z
+            light.position.x=camera.position.x
+            light.position.y=camera.position.y+50*/
+
+         box7.forEach(function(npc){
+             npc.lookAt(new BABYLON.Vector3(camera.position.x,npc.position.y,camera.position.z))
+         })
+
+            $(".show-hp").html("HP:"+playHp)
+
+            if(playHp<=0){
+                    camera.detachControl(canvas, false);
+                     fps_D.forEach(function (mesh) {
+                         mesh.position.y = 1000
+                    })
+                // gameoverM.play()
+                 setTimeout(function () {
+                     document.getElementById("game_over").style.display = "block";
+                 }, 10)
+                    //camera.setTarget(new BABYLON.Vector3(mesh.position.x, camera.position.y, mesh.position.z))
+            }
+
+
+
+            if(freeState==true){
+                var pickResult = scene.pick(window.innerWidth/2, window.innerHeight/2);
+                if (pickResult.hit) {
+                    console.log(pickResult.pickedMesh.name)
+                   // console.log(pickResult.pickedPoint)
+                    if(pickResult.pickedMesh.name=="npc"||pickResult.pickedMesh.name2=="meinv"){
+                      //  pickResult.pickedMesh.dieState=true
+                     //   pickResult.pickedMesh.checkCollisions = false;
+                    //    pickResult.pickedMesh.isPickable=false
+                        pickResult.pickedMesh.parent.hp-=30
+                        Xue.Position(pickResult.pickedPoint)
+                        Xue.start();
+                        setTimeout(function(){
+                            Xue.stop();
+                        },100)
+                    }else{
+                            setBoom.Position(pickResult.pickedPoint)
+                            setBoom.start();
+                            setTimeout(function(){
+                                setBoom.stop();
+                            },100)
+                    }
+                }
+            }
+
+
+        })
+
+
+
+
+/*
+        qiangMaterial= new BABYLON.StandardMaterial("qiang444",scene)
+        qiangMaterial.diffuseTexture=new BABYLON.Texture("../images/qiang666.jpg", scene);
+        qiangMaterial.diffuseTexture.uScale=0.5
+        qiangMaterial.diffuseTexture.vScale=0.5
+        qiangMaterial.diffuseTexture.coordinatesIndex=0
+        qiangMaterial.specularPower = 10000;
+        qiangMaterial.specularColor= new BABYLON.Color4(0, 0, 0,0)*/
+
+
+
+var playerHit;
+
+function getUserposition(){
+    var origin = camera.position;
+
+    var _direction = new BABYLON.Vector3(0, Math.PI * -2, 0);
+
+    var length = 0.5;
+
+    var ray = new BABYLON.Ray(origin, _direction, length);
+    // ray.show(scene, new BABYLON.Color3(1, 1, 0.1));
+
+    var hit = scene.pickWithRay(ray);
+    hit.fastCheck = true;
+
+    if (hit.pickedMesh) {
+        playerHit=hit.pickedPoint
+    }
+}
+
+       /* setInterval(function(){
+
+        },100)*/
+
+        scene.onAfterStepObservable.add(function () {
+            getUserposition()
+        })
+
+        var isLocked = false;
+
+      /*  var pointerlockchange = function () {
+            var controlEnabled = document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement || document.msPointerLockElement || false;
+            // If the user is already locked
+            if (!controlEnabled) {
+                camera.detachControl(canvas);
+                isLocked = false;
+            } else {
+                camera.attachControl(canvas);
+                isLocked = true;
+            }
+        };*/
+
+
+        document.querySelectorAll(".laoding-tips")[0].innerHTML="初始化导航网格中..."
+
+         BABYLON.SceneLoader.ImportMesh("", "../example/model/xz_map1/", "xz_map1.babylon", scene, function(newMeshesmap) {
+
+             countLoad++
+
+             var navigation = new Navigation();
+             var navmesh = scene.getMeshByName("Navmesh");
+             var zoneNodes = navigation.buildNodes(navmesh);
+             navigation.setZoneData('level', zoneNodes);
+
+
+             var npc_state=[]
+             box7.forEach(function(npc,i){
+                 npc_state[i]=[0,0,0]
+             })
+
+             function castRay(mesh,playerHit,_i) {
+                     var path = navigation.findPath(mesh.position, playerHit, 'level', navigation.getGroup('level', mesh.position)) || [];
+
+                     if (path && path.length > 0) {
+                         var length = 0;
+                         var _length=0
+                         var direction = [{
+                             frame: 0,
+                             value: mesh.position
+                         }];
+
+
+
+                         for (var i = 0; i < path.length; i++) {
+                            length += BABYLON.Vector3.Distance(direction[i].value, path[i]);
+
+                             var juli
+
+                             if(i==0){
+                                 juli=getPositionjuli(mesh.position,path[i])
+                             }else{
+                                 juli=getPositionjuli(path[i-1],path[i])
+                             }
+
+                             var _frame=_length+(juli*100)
+                                 _length=_frame
+
+                               // console.log("帧："+_frame+",距离："+juli+";")
+
+                             direction.push({
+                                 frame: _frame,
+                                 value: path[i]
+                             });
+                         }
+
+                         for (var i = 0; i < direction.length; i++) {
+                             direction[i].frame /= length;
+                         }
+
+                         var moveCamera = new BABYLON.Animation("CameraMove", "position", 180 / length + 10, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+
+                         moveCamera.setKeys(direction);
+
+                         mesh.animations.push(moveCamera);
+
+
+                         var gj;
+
+
+                         //    console.log(getDistance(box7[1],camera))
+
+                         if(mesh.npcdieState==false){
+                             if (getDistance(mesh, camera) <= 10 && getDistance(mesh, camera) >= 3) {
+
+                                 npc_state[_i][1] = 0
+                                 npc_state[_i][2] = 0
+                                 npc_state[_i][3] = 0
+                                 if (npc_state[_i][0] == 0) {
+                                     npc_state[_i][0] = 1
+                                     npc_pao[_i]()
+                                 }
+                                 scene.beginAnimation(mesh, 0, 100, false, 1);
+
+                                 //  console.log("远："+_i)
+
+                             } else if (getDistance(mesh, camera) >= 11) {
+
+                                 //  console.log("近："+_i)
+
+                                 npc_state[_i][0] = 0
+                                 npc_state[_i][2] = 0
+                                 npc_state[_i][3] = 0
+                                 if (npc_state[_i][1] == 0) {
+                                     npc_state[_i][1] = 1
+                                     npc_pao[_i]()
+                                 }
+                                 scene.beginAnimation(mesh, 0, 100, false, 2);
+                                 npc_zou[_i]()
+                             } else if (getDistance(mesh, camera) <= 3) {
+
+                                 // console.log("攻击："+_i)
+                                 scene.beginAnimation(mesh, 0, 0, false, 0);
+                                 npc_state[_i][0] = 0
+                                 npc_state[_i][1] = 0
+                                 npc_state[_i][3] = 0
+
+                                 playHp-=20;
+
+                                 if (npc_state[_i][2] == 0) {
+                                     npc_state[_i][2] = 1
+                                     gameover[_i]()
+                                     console.log("受到攻击，当前HP："+playHp)
+
+                                     /*fps_D.forEach(function (mesh) {
+                                         mesh.position.y = 1000
+                                     })*/
+                                     // gameoverM.play()
+                                     /* setTimeout(function () {
+                                          document.getElementById("game_over").style.display = "block";
+                                      }, 1000)*/
+                                 }
+                                 /* scene.beginAnimation(box7[1], 0, 0, false, 0);
+                                  camera.detachControl(canvas, false);
+                                  camera.setTarget(new BABYLON.Vector3(box7[1].position.x, camera.position.y, box7[1].position.z))*/
+                             }
+
+
+                         }
+
+
+
+
+
+
+
+                         console.log("血量："+mesh.hp)
+
+                         if(mesh.hp<0){
+                             npc_state[_i][0] = 0
+                             npc_state[_i][1] = 0
+                             npc_state[_i][2] = 0
+                             if (npc_state[_i][3] == 0) {
+                                 npc_state[_i][3] = 1
+                                 console.log("死亡："+i)
+                                 scene.beginAnimation(mesh, 0, 0, false, 0);
+                                 npcdie[_i]()
+                                 mesh.npcdieState=true;
+                                 setTimeout(function(){
+                                     mesh.position=npcHomePosition;
+                                     mesh.npcdieState=false;
+                                     mesh.hp=100;
+                                 },10000)
+                             }
+                         }
+
+
+                         //npcmove.speedRatio=4
+                     }
+
+
+             }
+
+
+
+             $(".begin-game").click(function(){
+
+                 if (!isLocked) {
+                     canvas.requestPointerLock = canvas.requestPointerLock || canvas.msRequestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock || false;
+                     if (canvas.requestPointerLock) {
+                         canvas.requestPointerLock();
+                         isLocked=false;
+                     }
+                 }
+
+                 camera.attachControl(canvas);
+
+                 $("#renderCanvas").focus()
+
+                 //pointerlockchange()
+
+                 $(this).hide()
+                 $(".loading").addClass("loading-over");
+                 box7.forEach(function(_npc,i){
+                     !(function(){
+                         setTimeout(function(){
+                             setInterval(function(){
+                                 castRay(_npc,playerHit,i);
+                             },1000)
+                         },10000*i)
+                     })()
+                 })
+             })
+
+
+
+
+
+
+
+
+
+            newMeshesmap.forEach(function(mesh,index){
+
+                // mesh.checkCollisions = true;
+                mesh.isPickable = true;
+                mesh.checkCollisions = true;
+
+                 //   mesh.parent=box6
+              //   box6.scaling=new BABYLON.Vector3(1,1,1)
+                 shadowGenerator.getShadowMap().renderList.push(mesh);
+                 shadowGenerator2.getShadowMap().renderList.push(mesh);
+                 shadowGenerator3.getShadowMap().renderList.push(mesh);
+                 mesh.receiveShadows = true;
+
+                 if(mesh.name!="Navmesh"){
+                     /* mesh.material=qiangMaterial
+                      mesh.clone().material=qiangMaterial*/
+                 }else{
+                     mesh.visibility=0;
+                     mesh.checkCollisions = false;
+                     mesh.isPickable = false;
+                 }
+
+
+                scene.getMeshByName("BSP_Object_model_101").material.subMaterials.forEach(function(mate){
+                    mate.opacityTexture =mate.diffuseTexture
+                    mate.opacityTexture.hasAlpha=true
+                    mate.diffuseTexture.hasAlpha=true
+                })
+
+
+              /*  mesh.createOrUpdateSubmeshesOctree(1000, 1000)
+                mesh.useOctreeForCollisions()*/
+
+             })
+
+             newMeshesmap.forEach(function(mesh,index){
+                 mesh.subdivide(100)
+                 mesh.createOrUpdateSubmeshesOctree()
+                 mesh.useOctreeForCollisions()
+                 mesh.useOctreeForPicking()
+                 mesh.useOctreeForRenderingSelection()
+             })
+          //   var octree = scene.createOrUpdateSelectionOctree(200, 2)
+    })
+
+
+        function getDistance(e,o) {
+            var n = e.position.x
+                , t = e.position.y
+                , i = e.position.z
+                , r = o.position.x
+                , s = o.position.y
+                , a = o.position.z;
+            return Math.sqrt(Math.pow(n - r, 2) + Math.pow(t - s, 2) + Math.pow(i - a, 2))
+        }
+
+        function getPositionjuli(position1,position2) {
+            var n = position1.x
+                , t = position1.y
+                , i = position1.z
+                , r = position2.x
+                , s = position2.y
+                , a = position2.z;
+            return Math.sqrt(Math.pow(n - r, 2) + Math.pow(t - s, 2) + Math.pow(i - a, 2))
+        }
+
+
+
+
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+
+
+            countLoad++
+
+
+            box7.forEach(function(npc,i){
+                newMeshesmap.forEach(function(mesh,index){
+                    box7_npc[i]=[]
+                    box7_npc[i][index]=mesh.clone()
+
+                   /* if(mesh.skeleton!=undefined){
+                        box7_npc[i]=mesh.skeleton.clone()
+                        box7_npc_ani[i].push(mesh.skeleton.clone())
+                       // box7_npc_ani[i][index].parent= npc
+                      //  box7_npc[i].parent=npc;
+                        npc_zou[i]=function(){
+                            box7_npc_ani[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton, 162, 226, true);
+                            })
+                        }
+                        npc_pao[i]=function(){
+                            box7_npc_ani[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton,  227, 263, true);
+                            })
+                            //scene.beginAnimation(box7_npc_ani[i][index], 227, 263, true);
+                        }
+                        gameover[i]=function(){
+                            box7_npc_ani[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton, 264, 325, true);
+                            })
+                           // scene.beginAnimation(box7_npc_ani[i][index], 264, 325, true);
+                        }
+
+                        //scene.beginAnimation(dd, 0, 100, true, 0.8);
+                    }*/
+
+                    box7_npc[i][index].name2="meinv"
+
+                    box7_npc[i][index].isPickable = true;
+
+
+                    if(index!=0){
+                        box7_npc[i][index].parent=npc
+                    }
+
+
+                    if(mesh.skeleton!=undefined){
+                        box7_npc[i][index].skeleton=mesh.skeleton.clone()
+
+                        shadowGenerator.getShadowMap().renderList.push(box7_npc[i][index]);
+                        shadowGenerator2.getShadowMap().renderList.push(box7_npc[i][index]);
+                        shadowGenerator3.getShadowMap().renderList.push(box7_npc[i][index]);
+
+                        scene.beginAnimation(box7_npc[i][index].skeleton, 227, 263, true);
+                        npc_zou[i]=function(){
+                            box7_npc[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton, 162, 226, true);
+                            })
+                        }
+                        npc_pao[i]=function(){
+                            box7_npc[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton,  227, 263, true);
+                            })
+                            //scene.beginAnimation(box7_npc_ani[i][index], 227, 263, true);
+                        }
+                        gameover[i]=function(){
+                            box7_npc[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton, 264, 325, true);
+                            })
+                            // scene.beginAnimation(box7_npc_ani[i][index], 264, 325, true);
+                        }
+
+                        npcdie[i]=function(){
+                            box7_npc[i].forEach(function(_thisNpc){
+                                scene.beginAnimation(_thisNpc.skeleton, 325, 500, false);
+                            })
+                            // scene.beginAnimation(box7_npc_ani[i][index], 264, 325, true);
+                        }
+                        //scene.beginAnimation(dd, 0, 100, true, 0.8);
+                    }
+
+                    npc.scaling=new BABYLON.Vector3(0.03,0.03,0.03)
+
+                    box7_npc[i][index].position.y+=23
+
+                })
+            })
+
+           /* newMeshesmap.forEach(function(mesh,index){
+                    mesh.name2="meinv"
+                    mesh.parent=box7[1]
+
+                var c_music=0;
+
+                var music = new BABYLON.Sound("Violons", "music/nv_npc_jiao.wav", scene, function(){
+                    musicPlay()
+                }, { volume: 0,loop:true });
+
+
+                var music2 = new BABYLON.Sound("Violons", "music/nv_npc_jiao2.wav", scene, function(){
+                    musicPlay()
+                }, { volume: 0,loop:true });
+
+                var clearM=[];
+
+                function musicPlay(){
+                    c_music++
+                    if(c_music>=3) {
+                        music.play()
+                        music2.play()
+                    }
+                        this.m1=function(){
+                                music.currentTime = 0;
+                                music2.currentTime = 0;
+                                music.setVolume(4)
+                                music2.setVolume(0)
+                        }
+
+                        this.m2=function(){
+                            music.currentTime = 0;
+                            music2.currentTime = 0;
+                                music.setVolume(0)
+                                music2.setVolume(4)
+                        }
+                        this.m3=function(){
+                            music.currentTime = 0;
+                            music2.currentTime = 0;
+                            music.setVolume(0)
+                            music2.setVolume(0)
+                        }
+
+                }
+
+                var objMusic=new musicPlay()
+
+                music.maxDistance=30;
+                music.attachToMesh(box7[1]);
+
+                    mesh.isPickable = true;
+                box7[1].scaling=new BABYLON.Vector3(0.03,0.03,0.03)
+                 //   shadowGenerator.getShadowMap().renderList.push(mesh);
+                    shadowGenerator2.getShadowMap().renderList.push(mesh);
+                    shadowGenerator3.getShadowMap().renderList.push(mesh);
+
+                mesh.position.y+=23
+
+                npc_zou=function(){
+                    scene.beginAnimation(mesh, 162, 226, true);
+                    objMusic.m2()
+                //    console.log(1111111)
+                }
+
+                npc_pao=function(){
+                    scene.beginAnimation(mesh, 227, 263, true);
+                    objMusic.m1()
+                 //   console.log(2222222)
+                }
+
+                gameover=function(){
+                    scene.beginAnimation(mesh, 264, 325, true);
+                    objMusic.m3()
+                //    console.log(3333333)
+                }
+            })*/
+        })
+
+/*
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })
+
+        BABYLON.SceneLoader.ImportMesh("", "../example/model/npc_njs2/", "npc_njs2.babylon", scene, function(newMeshesmap, particleSystems,skeletons) {
+
+        })*/
+
+
+
+
+
+        loadMeshes(models,function(){
+            v_1.show()
+        })
+
+
+        document.onkeydown = keyevent;
+        document.onkeyup = keyevent2;
+
+        var isLocked = false;
+
+
+        var v_1_state;
+        var v_2_state=true;
+        var v_3_state;
+
+
+        scene.onPointerDown = function (evt) {
+
+            camera._needMoveForGravity = true;
+            if(qiangState==1){
+                light0.intensity=1;
+                freeState=true;
+                freeHuo.start()
+                mp5.play()
+                v_1.do();
+                freemusic=setInterval(function(){mp5.stop();lightFree(); v_1.do(); mp5.play()},20)
+                // mp5.stop();lightFree(); mp5.play()
+            }else if(qiangState==2){
+                light0.intensity=1;
+                //sq.play()
+                if(v_2_state==true){
+                    freeState=true;
+                    freeHuo.start()
+                    v_2.do()
+                    sq.stop(); lightFree(); sq.play()
+                    v_2_state=false;
+                    setTimeout(function(){
+                        v_2_state=true;
+                    },500)
+                }
+
+            }else if(qiangState==3){
+                freeState=false;
+                //sq.play()
+                v_3.do()
+              /*  sq.stop();
+                sq.play()*/
+            }
+
+
+            function lightFree(){
+                light0.intensity=1;
+                setTimeout(function(){
+                    light0.intensity=0;
+                },0)
+            }
+
+
+
+          /*  free.reset()
+            free2.reset()
+            free_2.reset()
+            free2_2.reset()*/
+
+            //true/false check if we're locked, faster than checking pointerlock on each single click.
+
+
+            // if the click hits the ground object, we change the impact position
+            /* if (newMeshes.hit) {
+                 console.log(newMeshes.pickedMesh.name)
+             }
+             if (newMeshes2.hit) {
+                 console.log(newMeshes.pickedMesh.name)
+             }*/
+
+        };
+
+        scene.onPointerUp = function (evt) {
+
+            light0.intensity=0
+
+            clearInterval(freemusic)
+            //  gunshot.stop();
+
+            freeState=false;
+            freeHuo.stop()
+
+          /*  free = scene.beginAnimation(scene.getMeshByID("1ea0aafd-8f1a-4d57-bd34-3542b5a7baed"), 75, 75, false,1.5);
+            free2 = scene.beginAnimation(scene.getMeshByID("7270915d-8281-4797-a173-3a06ef9a6418"), 75, 75, false,1.5);
+
+            free_2 = scene.beginAnimation(scene.getMeshByID("66b54ec6-cd3b-47ba-96b6-e09c26c35dc9"), 75, 75, false,1);
+            free2_2 = scene.beginAnimation(scene.getMeshByID("0c00c3cf-2490-4da7-b8c2-28ba5216ba10"), 75, 75, false,1);*/
+
+        }
+
+
+
+    /*    yu1 = BABYLON.Mesh.CreateBox("crate", 2, scene);
+        yu1.material = new BABYLON.StandardMaterial("Mat", scene);
+        yu1.material.alpha=0;
+        yu1.position = new BABYLON.Vector3(0, 280, 0);*/
+
+
+        var skybox = BABYLON.Mesh.CreateBox("skyBox", 600.0, scene);
+        var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+        skyboxMaterial.backFaceCulling = false;
+        skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("../images/sky15/sky", scene);
+        skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.emissiveColor  = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.disableLighting = true;
+        skybox.material = skyboxMaterial;
+        skybox.applyFog=false;
+
+    //    var xiayu=new Yu(yu1)
+       // xiayu.start()
+
+        var setBoom=new setBooms(new BABYLON.Vector3(-16,0,0))
+
+        var Xue=new Xues(new BABYLON.Vector3(-16,0,0))
+
+
+        // 离开该函数
+        return scene;
+    }; // End of createScene function
+    // -------------------------------------------------------------
+    // 现在, 调用刚创建完的createScene函数
+    scene = createScene();
+    // 注册一个渲染循环已重复的渲染场景
+    engine.runRenderLoop(function () {
+        scene.render();
+    });
+    // 监测浏览器/画布大小改变事件
+    window.addEventListener("resize", function() {
+        engine.resize();
+    });
+</script>
+
+</body>
+</html>
